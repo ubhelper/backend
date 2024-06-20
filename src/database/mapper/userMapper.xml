@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="userMapper">
+
+    <select id="selectUser">
+        SELECT *
+        FROM t_users
+        WHERE phone = #{phone}
+        AND role_id = 3
+    </select>
+
+    <insert id="insertUser">
+        INSERT INTO t_users
+        ( user_id
+        , user_name
+        , password
+        , salt
+        )
+        VALUES
+        ( #{user_id}
+        , #{user_name}
+        , #{password}
+        , #{salt}
+        )
+    </insert>
+
+    <update id="updateEmployeePassword">
+        UPDATE iw_employees
+        SET password = #{password}
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="updateUser">
+        UPDATE iw_users
+        <set>
+            <if test="user_name != null"> user_name=#{user_name},</if>
+            <if test="password != null"> password=#{password},</if>
+            <if test="text != null"> text=#{text},</if>
+        </set>
+        WHERE user_id = #{user_id}
+    </update>
+
+    <delete id="deleteUser">
+        DELETE FROM iw_users
+        WHERE user_id = #{user_id}
+    </delete>
+
+
+    <!-- employee begin -->
+    <select id="loginEmployee">
+        SELECT name,
+        email,
+        phone,
+        profile,
+        team_seq,
+        seq,
+        password,
+        pro_seq,
+        salt
+        FROM iw_employees
+        WHERE is_deleted = 'N'
+        AND use_yn = 'Y'
+        <if test="email != null">
+          AND (email = #{email} OR seq = #{email})
+        </if>
+        <if test="seq != null">
+          AND seq = #{seq}
+        </if>
+    </select>
+
+    <select id="personalEmployee">
+        SELECT c.lastname, 
+        c.seq,
+        c.firstname, 
+        DATE_FORMAT(c.birthdate, "%Y-%m-%d") as birthdate,
+        c.phone, 
+        c.register, 
+        c.email, 
+        c.address, 
+        c.family, 
+        c.edu, 
+        c.lang, 
+        c.experience, 
+        c.personal, 
+        c.skill 
+        FROM iw_career as c 
+        INNER JOIN 
+        iw_employees as e 
+        ON c.seq = e.career_seq 
+        WHERE e.seq = #{seq}
+    </select>
+
+    <select id="selectVotes">
+        SELECT vote,
+        v.seq,
+        title,
+        content,
+        hidden,
+        status,
+        DATE_FORMAT(created_at, "%Y-%m-%d") as date,
+        case  	
+        when hidden > 0 then "Unknown"
+        else name
+        end as name
+        FROM iw_votes as v
+        INNER JOIN iw_employees as e
+        ON v.employee_seq = e.seq
+        <if test="seq != null">
+          WHERE employee_seq=#{seq}
+          AND hidden = 0
+        </if>
+    </select>
+
+    <update id="updateFeedBack">
+        UPDATE iw_votes
+        SET status = #{status}
+        WHERE seq = #{seq}
+    </update>
+
+    <insert id="insertVote">
+        INSERT INTO iw_votes
+        ( employee_seq,
+          vote,
+          title,
+          content,
+          hidden
+        )
+        VALUES
+        ( #{employee_seq},
+          #{vote},
+          #{title},
+          #{content},
+          #{hidden}
+        )
+    </insert>
+
+    <update id="updateUserProfile">
+        UPDATE iw_employees
+        <set>
+            <if test="profile != null"> profile=#{profile},</if>
+        </set>
+        WHERE seq = #{seq}
+    </update>
+
+    <insert id="insertEmployee">
+    INSERT INTO iw_employees
+    ( name,
+      email,
+      phone,
+      password,
+      salt,
+      approved,
+      team_seq,
+      pro_seq,
+      career_seq,
+      levels
+    )
+    VALUES
+    ( #{name},
+      #{email},
+      #{phone},
+      #{password},
+      #{salt},
+      #{approved},
+      #{team_seq},
+      #{pro_seq},
+      #{seq},
+      #{levels}
+    )
+    </insert>
+
+    <select id="selectProfessions">
+        SELECT 
+        * FROM 
+        iw_professions 
+    </select>
+
+    <select id="getEmployees">
+        select ie.name, 
+        ie.team_seq, 
+        ie.seq, 
+        ie.profile,
+        ie.levels, 
+        ie.photo,
+        ie.phone,
+        ie.email,
+        it.team_name, 
+        ie.pro_seq, 
+        ip.pro_name, 
+        ip.pro_name_ko,
+        ie.sort,
+        ic.experience,
+        ie.is_deleted,
+        ie.use_yn,
+        ic.skill,
+        ic.lang
+        from iw_employees ie
+        left join iw_teams it 
+            on it.seq = ie.team_seq 
+        left join iw_professions ip 
+            on ip.seq = ie.pro_seq 
+        left join iw_career ic 
+            on ic.seq = ie.career_seq
+        WHERE
+        <choose>
+            <when test="all == null or all == ''">
+                ie.is_deleted = 'N'
+                AND ie.use_yn = 'Y'
+            </when>
+            <otherwise>
+                ie.seq > 0
+            </otherwise>
+        </choose>
+
+        ORDER BY ie.sort ASC
+    </select>
+
+    <update id="updatePhoto">
+        UPDATE iw_employees 
+        <set>
+            updated_date = now(),
+            <if test="file != null"> photo = #{file}</if>
+        </set>
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="deleteEmployee">
+        UPDATE iw_employees
+        SET is_deleted = 'Y',
+        use_yn = 'N'
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="recoverEmployee">
+        UPDATE iw_employees
+        SET is_deleted = 'N',
+        use_yn = 'Y'
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="updateEmployeeCareer">
+        UPDATE iw_career as ic, iw_employees as ie
+        <set>
+            ic.personal=#{personal},
+            <if test="lastname != null"> ic.lastname=#{lastname},</if>
+            <if test="firstname != null"> ic.firstname=#{firstname}, ie.name = #{firstname},</if>
+            <if test="birthdate != null"> ic.birthdate=#{birthdate},</if>
+            <if test="phone != null"> ic.phone=#{phone}, ie.phone = #{phone},</if>
+            <if test="register != null"> ic.register=#{register},</if>
+            <if test="address != null"> ic.address=#{address},</if>
+            <if test="family != null"> ic.family=#{family},</if>
+            <if test="edu != null"> ic.edu=#{edu},</if>
+            <if test="lang != null"> ic.lang=#{lang},</if>
+            <if test="experience != null"> ic.experience=#{experience},</if>
+            <if test="skill != null"> ic.skill=#{skill},</if>
+        </set>
+        WHERE ie.career_seq = ic.seq AND ic.seq = #{seq}
+    </update>
+
+    <update id="updateEmployee">
+        UPDATE iw_employees
+        SET team_seq=${team_seq},
+        pro_seq=${pro_seq},
+        sort=${sort},
+        levels=#{levels}
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="updateCareerStatus">
+        UPDATE iw_career
+        <set>
+            <if test="status != null"> status=#{status}</if>
+        </set>
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="updateProfession">
+        UPDATE iw_professions SET
+        pro_name=#{pro_name},
+        pro_name_ko=#{pro_name_ko}
+        WHERE seq = #{seq}
+    </update>
+
+    <insert id="insertProfession">
+    INSERT INTO iw_professions
+    ( pro_name, pro_name_ko )
+    VALUES ( #{pro_name}, #{ko_name})
+    </insert>
+
+    <update id="deleteProfession">
+    DELETE FROM iw_professions
+    WHERE seq = ${seq}
+    </update>
+
+    <insert id="addCareer">
+    INSERT INTO iw_career
+    ( lastname,
+      firstname,
+      birthdate,
+      phone,
+      register,
+      email,
+      address,
+      family,
+      edu,
+      lang,
+      experience,
+      personal,
+      skill
+    )
+    VALUES
+    ( #{lastname},
+      #{firstname},
+      #{birthdate},
+      #{phone},
+      #{register},
+      #{email},
+      #{address},
+      #{family},
+      #{edu},
+      #{lang},
+      #{experience},
+      #{personal},
+      #{skill}
+    )
+    </insert>
+
+
+    <!-- employee end -->
+</mapper>
