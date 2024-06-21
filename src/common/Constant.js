@@ -1,9 +1,18 @@
 const DB_FIELD_NAME = {
-  USER_ID       :     'user_id',
+  USER_ID       :     'id',
   PHONE         :     'phone',
   USER_NAME     :     'user_name',
   PASSWORD      :     'password',
   SALT          :     'salt',
+  FIRST_NAME    :     'first_name',
+  LAST_NAME     :     'last_name',
+  EMAIL         :     'email',
+  REGISTER      :     'register',
+  GENDER        :     'gender',
+  ROLE_ID       :     'role_id',
+  PROFILE       :     'profile',
+  SEQ           :     'seq',
+  FILE_SEQ      :     'fileSeq'
 };
 
 const DB_RESULT       = {
@@ -45,14 +54,15 @@ const DATA_FIELD_NAME = {
 };
 
 const DB_TABLE_NAME = {
-  CAREER              : 'iw_career',
-  EMPLOYEE            : 'iw_employees',
-  PROJECT             : 'iw_projects',
-  TEAMS               : 'iw_teams',
-  USERS               : 'iw_users',
-  VOTES               : 'iw_votes',
-  BLOGS               : 'iw_blogs',
-  PROFESSION          : 'iw_professions'
+  USERS               : 't_users'               ,
+  FILES               : 't_file'                ,
+  JOBS                : 't_job'                 ,
+  JOB_APPLY           : 't_job_apply'           ,
+  ROLES               : 't_roles'               ,
+  USER_FAV            : 't_user_favorite'       ,
+  REVIEW              : 't_user_review'         ,
+  USER_VERIFIED       : 't_user_verified'       ,
+  USER_WALLET         : 't_user_wallet'         ,
 };
 
 const NAMESPACE = {

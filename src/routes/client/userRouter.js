@@ -5,9 +5,11 @@ const controller = require('../../controller/UserController');
 const fileUpload = require('../../middleware/FileUpload');
 
 router.post('/login', controller.login);
-router.post('/register', controller.empRegister);
+router.post('/register', controller.register);
+router.post('/update-profile', fileUpload.uploadProfilePic(), controller.updateProfile);
+
+
 // router.post('/create-resume', controller.createResume);
-// router.post('/update-profile', fileUpload.uploadProfilePic(), controller.empUpdateProfile);
 // router.get('/employee-personal-info', controller.empPersonalInfo);
 // router.post('/update-resume', controller.updateCareer);
 // router.post('/add-vote', controller.addVote);

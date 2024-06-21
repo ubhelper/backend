@@ -1,7 +1,7 @@
 const { getLogger } = require('../lib/logger');
 const Logger = getLogger({ title: 'user model' });
 // const EmployeeModel = require('./EmployeeModel');
-// const MailModel = require('./MailModel');
+const FileModel = require('./FileModel');
 const EmployeeModel=null;
 const MailModel = null;
 const Query = require('../database/Mybatis');
@@ -55,30 +55,116 @@ const selectUser = async (requestData, ID) => {
 const insertUser = async (requestData) => {
 
     try {
-        const userID    = requestData.getBodyValue(DB_FIELD_NAME.USER_ID);
-        const password  = requestData.getBodyValue(DB_FIELD_NAME.PASSWORD);
-        const userName  = requestData.getBodyValue(DB_FIELD_NAME.USER_NAME);
-        const salt      = requestData.getBodyValue(DB_FIELD_NAME.SALT);
+        const is_exist = await checkUser(requestData);
+
+        if (is_exist) {
+          return { status: 'existed' };
+        }
+
+        const firstname    = requestData.getBodyValue(DB_FIELD_NAME.FIRST_NAME);
+        const lastname    = requestData.getBodyValue(DB_FIELD_NAME.LAST_NAME);
+        const phone  = requestData.getBodyValue(DB_FIELD_NAME.PHONE);
+        const email = requestData.getBodyValue(DB_FIELD_NAME.EMAIL);
+        const register = requestData.getBodyValue(DB_FIELD_NAME.REGISTER);
+        const gender = requestData.getBodyValue(DB_FIELD_NAME.GENDER);
+        const role = requestData.getBodyValue(DB_FIELD_NAME.ROLE_ID);
+        const salt   = await bcrypt.genSalt();
+        const password  = await bcrypt.hash(requestData.getBodyValue(DB_FIELD_NAME.PASSWORD), salt);
 
         const params = {
-        [DB_FIELD_NAME.USER_ID]   : userID,
-        [DB_FIELD_NAME.PASSWORD]  : password,
-        [DB_FIELD_NAME.USER_NAME] : userName,
-        [DB_FIELD_NAME.SALT]      : salt,
+          [DB_FIELD_NAME.FIRST_NAME]    : firstname,
+          [DB_FIELD_NAME.LAST_NAME]     : lastname,
+          [DB_FIELD_NAME.PHONE]         : phone,
+          [DB_FIELD_NAME.EMAIL]         : email,
+          [DB_FIELD_NAME.REGISTER]      : register,
+          [DB_FIELD_NAME.GENDER]        : gender,
+          [DB_FIELD_NAME.ROLE_ID]       : role,
+          [DB_FIELD_NAME.SALT]          : salt,
+          [DB_FIELD_NAME.PASSWORD]      : password
         };
 
         const connection = requestData.getConnection();
-
         const statement = Query(NAMESPACE.USER,'insertUser', params);
         const res = await connection.query(statement);
-
-        return res[DB_RESULT.ROW_FIRST][DB_RESULT.AFFECTED_ROWS] === DB_RESULT.ONE;
+        return { status: 'success',  data: res[DB_RESULT.ROW_FIRST][DB_RESULT.AFFECTED_ROWS] === DB_RESULT.ONE};
     }
     catch (e) {
         Logger.error(e.stack);
         throw e;
     }
 };
+
+const updateProfile = async (requestData) => {
+  const params = {
+    [DB_FIELD_NAME.FILE_SEQ] : requestData.getBodyValue(DB_FIELD_NAME.FILE_SEQ) != null ? requestData.getBodyValue(DB_FIELD_NAME.FILE_SEQ) : '',
+    [DB_FIELD_NAME.USER_ID]     : requestData.getBodyValue(DB_FIELD_NAME.USER_ID) != null ? requestData.getBodyValue(DB_FIELD_NAME.USER_ID) : ''
+  }
+
+  
+  try {
+
+    const file = await getUser(requestData);
+    if(file) {
+      await FileModel.deleteFile(requestData, file.profile);
+    }
+
+    const connection = requestData.getConnection();
+    const queryString = Query(NAMESPACE.USER, 'updateUserProfile', params);
+    
+    const res = await connection.query(queryString);
+    return { status: 'success',  data: res[DB_RESULT.ROW_FIRST][DB_RESULT.AFFECTED_ROWS] === DB_RESULT.ONE};
+  } catch (e) {
+    Logger.error(e);
+    throw e;
+  }
+}
+
+const getUser = async ( requestData ) => {
+  const seq = requestData.getBodyValue(DB_FIELD_NAME.USER_ID);
+  const params = {
+    [DB_FIELD_NAME.USER_ID]   : seq
+  };
+
+  const connection = requestData.getConnection();
+  const statement = Query(NAMESPACE.USER, 'getUser', params);
+  const [dataSet] = await connection.query(statement);
+  return dataSet[DB_RESULT.ROW_FIRST];
+}
+
+const checkUser = async ( requestData ) => {
+  const phone = requestData.getBodyValue(DB_FIELD_NAME.PHONE);
+  const params = {
+    [DB_FIELD_NAME.PHONE]   : phone
+  };
+
+  const connection = requestData.getConnection();
+  const statement = Query(NAMESPACE.USER, 'checkUser', params);
+  const [dataSet] = await connection.query(statement);
+  return dataSet[DB_RESULT.ROW_FIRST];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const updateUser = async (requestData, params) => {
 
@@ -338,6 +424,13 @@ const updateFeedback = async (requestData) => {
   module.exports = {
     selectUser,
     insertUser,
+    checkUser,
+    updateProfile,
+    getUser,
+
+
+
+
     updateUser,
     deleteUser,
     getSuperAdmin,

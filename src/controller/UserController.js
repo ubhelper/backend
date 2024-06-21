@@ -12,7 +12,7 @@ const PayloadData = require('../common/PayloadData');
 const RequestData = require('../common/RequestData');
 const ResponseData = require('../common/ResponseData');
 
-const {DB_FIELD_NAME} = require('../common/Constant');
+const { DB_FIELD_NAME } = require('../common/Constant');
 const { RESPONSE_CODE, RESPONSE_FIELD } = require('../common/ResponseConst');
 
 const UserModel = require('../model/UserModel');
@@ -21,7 +21,6 @@ const FileModel = require('../model/FileModel');
 
 const xl = require('excel4node');
 const wb = new xl.Workbook();
-const ws = wb.addWorksheet('Worksheet Name');
 
 const login = async (req, res) => { 
 
@@ -43,27 +42,15 @@ const login = async (req, res) => {
         }
   
         let userInfo = await UserModel.selectUser(requestData, requestData.getBodyValue(DB_FIELD_NAME.PHONE));
-  
-        
+
         let password = requestData.getBodyValue(DB_FIELD_NAME.PASSWORD);
 
         if (userInfo == null) {
-            // const siteInfo = await UserModel.getSuperAdmin(requestData);
-            // userInfo = {};
-            // if(siteInfo.su_admin_id === requestData.getBodyValue(DB_FIELD_NAME.USER_ID)){
-            //     userInfo[DB_FIELD_NAME.USER_ID] = siteInfo.su_admin_id;
-            //     userInfo[DB_FIELD_NAME.USER_NAME] = siteInfo.su_admin_name;
-            //     userInfo[DB_FIELD_NAME.PASSWORD] = siteInfo.su_admin_password;
-            //     userInfo[DB_FIELD_NAME.SALT] = siteInfo.salt;
-            // } else {
-            //     return responseData.setResponseCode(RESPONSE_CODE.WRONG_ACCOUNT);
-            // }
             return responseData.setResponseCode(RESPONSE_CODE.WRONG_ACCOUNT);
         }
   
         const dbPassword  = userInfo[DB_FIELD_NAME.PASSWORD];
         const salt        = userInfo[DB_FIELD_NAME.SALT];
-
         password = await bcrypt.hash(password, salt);
 
         if(password !== dbPassword) {
@@ -89,6 +76,140 @@ const login = async (req, res) => {
       res.send(responseData);
     }
   };
+
+  const register = async (req, res) => {
+    let   requestData     =  new RequestData(req);
+    let   responseData    =  new ResponseData(requestData);
+
+    try {
+      
+      const fieldList = [
+        DB_FIELD_NAME.FIRST_NAME,
+        DB_FIELD_NAME.LAST_NAME,
+        DB_FIELD_NAME.PHONE,
+        DB_FIELD_NAME.EMAIL,
+        DB_FIELD_NAME.REGISTER,
+        DB_FIELD_NAME.GENDER,
+        DB_FIELD_NAME.PASSWORD,
+        DB_FIELD_NAME.ROLE_ID
+      ];
+
+      if (!requestData.hasAllMandatoryFields(fieldList)) {
+        return responseData.setResponseCode(RESPONSE_CODE.REQUIRED_FIELD);
+      }
+
+      if (!requestData.isConnected()) {
+            await requestData.start(true);
+      }
+
+      let userInfo = await UserModel.insertUser(requestData);
+      
+      if ( userInfo.status == 'existed') {
+        responseData.setResponseCode(RESPONSE_CODE.ID_DUPLICATE);
+      } else {
+        responseData.setResponseCode(RESPONSE_CODE.SUCCESS);
+      }
+    } catch (e) {
+      Logger.error(e.stack);
+      await requestData.error();
+      responseData.setResponseCode(RESPONSE_CODE.CONTACT_ADMIN);
+    }
+    finally {
+      await requestData.end(responseData.isSuccess());
+      res.send(responseData);
+    }
+  }
+
+  const updateProfile = async (req, res) => {
+    let requestData = new RequestData(req);
+    let responseData = new ResponseData(requestData);
+
+    try {
+      if (requestData.payload.userID) {
+
+        
+        let fileResult = {};
+        if(req.file) {
+          if (!requestData.isConnected()) {
+            await requestData.start(true);
+          }
+          requestData.setBodyValue('file', req.file);
+          fileResult = await FileModel.insertFile(requestData);
+          
+          if(!fileResult){
+              responseData.setResponseCode(RESPONSE_CODE.FILE_ERROR);
+          } 
+
+          requestData.setBodyValue(DB_FIELD_NAME.FILE_SEQ, fileResult[0].insertId);
+          requestData.setBodyValue(DB_FIELD_NAME.USER_ID, requestData.payload.userID);
+        }
+
+        const profileResult = await UserModel.updateProfile(requestData);
+        
+        if ( profileResult.status == 'success') {
+          responseData.setResponseCode(RESPONSE_CODE.SUCCESS);
+          responseData.setDataValue(RESPONSE_FIELD.DATA, { profile: fileResult[0].insertId});
+        }
+
+      } else {
+        await requestData.error();
+        responseData.setResponseCode(RESPONSE_CODE.CONTACT_ADMIN);
+      }
+    } catch (e) {
+      Logger.debug(e);
+      await requestData.error();
+      responseData.setResponseCode(RESPONSE_CODE.CONTACT_ADMIN);
+    } finally {
+        await requestData.end(responseData.isSuccess());
+        res.send(responseData);
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   const updatePhoto = async (req, res) => {
     let   requestData     =  new RequestData(req);
@@ -170,10 +291,6 @@ const login = async (req, res) => {
   // employee begin
 
   const empLogin = async (req, res) => {
-    console.log(
-      '====hey'
-    );
-
     let   requestData     =  new RequestData(req);
     let   responseData    =  new ResponseData(requestData);
 
@@ -219,43 +336,6 @@ const login = async (req, res) => {
 
       responseData.setDataValue(RESPONSE_FIELD.DATA, employeeInfo);
 
-    } catch (e) {
-      Logger.error(e.stack);
-      await requestData.error();
-      responseData.setResponseCode(RESPONSE_CODE.CONTACT_ADMIN);
-    }
-    finally {
-      await requestData.end(responseData.isSuccess());
-      res.send(responseData);
-    }
-  }
-
-  const empRegister = async (req, res) => {
-    let   requestData     =  new RequestData(req);
-    let   responseData    =  new ResponseData(requestData);
-
-    try {
-      
-      const fieldList = [
-        'email',
-        'name',
-        'phone'
-      ];
-
-      if (!requestData.hasAllMandatoryFields(fieldList)) {
-        return responseData.setResponseCode(RESPONSE_CODE.REQUIRED_FIELD);
-      }
-
-      if (!requestData.isConnected()) {
-            await requestData.start(true);
-        }
-      let employeeInfo = await EmployeeModel.insertEmployee(requestData, requestData.getBodyValue(fieldList[0]));
-      
-      if ( employeeInfo.status == 'existed') {
-        responseData.setResponseCode(RESPONSE_CODE.ID_DUPLICATE);
-      } else {
-        responseData.setResponseCode(RESPONSE_CODE.SUCCESS);
-      }
     } catch (e) {
       Logger.error(e.stack);
       await requestData.error();
@@ -399,46 +479,7 @@ const login = async (req, res) => {
     }
   }
 
-  const empUpdateProfile = async (req, res) => {
-    let requestData = new RequestData(req);
-    let responseData = new ResponseData(requestData);
-    try {
-      if (requestData.payload.seq) {
-        let fileResult = {};
-        if(req.file) {
-          if (!requestData.isConnected()) {
-            await requestData.start(true);
-        }
-          requestData.setBodyValue('file', req.file);
-          fileResult = await FileModel.insertFile(requestData);
-
-          if(!fileResult){
-              responseData.setResponseCode(RESPONSE_CODE.FILE_ERROR);
-          } 
-
-          requestData.setBodyValue('fileSeq', fileResult[0].insertId);
-          requestData.setBodyValue('seq', requestData.payload.seq);
-        }
-
-        const profileResult = await EmployeeModel.updateProfile(requestData);
-        if ( profileResult.status == 'success') {
-          responseData.setResponseCode(RESPONSE_CODE.SUCCESS);
-          responseData.setDataValue(RESPONSE_FIELD.DATA, { profile: fileResult[0].insertId});
-        }
-
-      } else {
-        await requestData.error();
-        responseData.setResponseCode(RESPONSE_CODE.CONTACT_ADMIN);
-      }
-    } catch (e) {
-      Logger.debug(e);
-      await requestData.error();
-      responseData.setResponseCode(RESPONSE_CODE.CONTACT_ADMIN);
-    } finally {
-        await requestData.end(responseData.isSuccess());
-        res.send(responseData);
-    }
-  }
+  
 
   const empPersonalInfo = async (req, res) => {
     let requestData = new RequestData(req);
@@ -827,10 +868,12 @@ const login = async (req, res) => {
 
   module.exports = {
     login,
+    register,
+    updateProfile,
+
+
     empLogin,
-    empRegister,
     createResume,
-    empUpdateProfile,
     empPersonalInfo,
     updateCareer,
     addVote,

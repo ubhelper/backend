@@ -32,8 +32,8 @@ class RequestData {
         return this.payload.getUserID();
     }
 
-    getSeq = () => {
-        return this.payload.getSeq();
+    getUserName = () => {
+        return this.payload.getUserName();
     }
 
     getBody = () => {

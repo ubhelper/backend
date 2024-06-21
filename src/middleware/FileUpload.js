@@ -11,6 +11,7 @@ let fileExt = "";
 
 let storage = multer.diskStorage({
     destination: (req, file, callback) => {
+
         if(!fs.existsSync(uploadDir)){
             fs.mkdirSync(uploadDir, { recursive: true });
             console.log('created directory');
@@ -74,14 +75,6 @@ const upload = multer({ storage: storage });
 const uploadImage = multer({ storage: storageResize, fileFilter: _imgFilter  });
 const uploadPicture = multer({ storage: storage, fileFilter: _imgFilter });
 
-module.exports = {
-    uploadSingle,
-    uploadArray,
-    uploadFields,
-    uploadProfilePic,
-    uploadSingleImage
-}
-
 function uploadSingle () {
     return upload.single('file')
 }
@@ -107,4 +100,12 @@ function uploadFields () {
   
 function uploadProfilePic () {
     return uploadPicture.single('image')
+}
+
+module.exports = {
+    uploadSingle,
+    uploadArray,
+    uploadFields,
+    uploadProfilePic,
+    uploadSingleImage
 }

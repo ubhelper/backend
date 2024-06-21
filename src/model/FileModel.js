@@ -1,5 +1,6 @@
 const { getLogger } = require('../lib/logger');
 const Logger = getLogger({ title: 'file model' });
+const fs = require('fs');
 
 const Query = require('../database/Mybatis');
 const path = require('path');
@@ -24,7 +25,6 @@ const loadFile = async (requestData, id = null) => {
         const connection = requestData.getConnection();
 
         const queryString = Query(NAMESPACE.FILE, 'getFileById', params);
-        console.log(queryString);
 
         const [file] = await connection.query(queryString);
         return file;
@@ -33,6 +33,47 @@ const loadFile = async (requestData, id = null) => {
         throw e;
     }
 }
+
+const DeleteRow = async (requestData, id) => {
+    if (!id) {
+        return
+    }
+
+    const params = {
+        fileId :  id,
+    };
+
+    try {
+        const connection = requestData.getConnection();
+        const queryString = Query(NAMESPACE.FILE, 'deleteFileById', params);
+
+        const [file] = await connection.query(queryString);
+        return file;
+    } catch (e) {
+        Logger.error(e);
+        throw e;
+    }
+}
+
+
+const deleteFile = async (requestData, id) => {
+    let file = await loadFile(requestData, id);
+    await DeleteRow(requestData, id );
+
+    
+    let file_name;
+    if (file && file.length > 0) {
+      file_name = file[0].file_name;
+      if (fs.existsSync(baseDir + file_name)) {
+        fs.unlink(baseDir + file_name, (err) => {
+          if (err) {
+            return;
+          }
+          return;
+        })
+      }
+    }
+  }
 
 const insertFile = async (requestData) => {    
     try {
@@ -71,4 +112,5 @@ const insertFile = async (requestData) => {
 module.exports = {
     loadFile,
     insertFile,
+    deleteFile
 }

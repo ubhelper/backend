@@ -5,7 +5,6 @@ class PayloadData {
         this.userID = null;
         this.userName = null;
         this.email = null;
-        this.seq = null;
     }
 
     loadObject(payload){
@@ -17,27 +16,31 @@ class PayloadData {
             this.userName = payload[DB_FIELD_NAME.USER_NAME];
         }
 
-        if(payload.hasOwnProperty('email')){
-            this.email = payload['email'];
+        if(payload.hasOwnProperty(DB_FIELD_NAME.EMAIL)){
+            this.email = payload[DB_FIELD_NAME.EMAIL];
         }
 
-        if(payload.hasOwnProperty('seq')){
-            this.seq = payload['seq'];
-        }
+        // if(payload.hasOwnProperty('seq')){
+        //     this.seq = payload['seq'];
+        // }
     }
 
     getObject(){
         const payload = {
             [DB_FIELD_NAME.USER_ID] : this.userID,
             [DB_FIELD_NAME.USER_NAME] : this.userName,
-            ['email'] : this.email,
-            ['seq'] : this.seq
+            [DB_FIELD_NAME.EMAIL] : this.email,
+            // ['seq'] : this.seq
         };
         return payload;
     }
 
     getUserID(){
         return this.userID;
+    }
+
+    getUserName(){
+        return this.userName;
     }
 }
 

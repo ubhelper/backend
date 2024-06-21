@@ -11,18 +11,65 @@
 
     <insert id="insertUser">
         INSERT INTO t_users
-        ( user_id
-        , user_name
+        ( first_name
+        , last_name
+        , phone
+        , email
+        , register
         , password
+        , role_id
+        , gender
         , salt
+        , created_at
         )
         VALUES
-        ( #{user_id}
-        , #{user_name}
+        ( #{first_name}
+        , #{last_name}
+        , #{phone}
+        , #{email}
+        , #{register}
         , #{password}
+        , #{role_id}
+        , #{gender}
         , #{salt}
+        , NOW()
         )
     </insert>
+
+    <select id="checkUser">
+        SELECT id
+        FROM t_users
+        WHERE phone = #{phone}
+        AND role_id = 3
+    </select>
+
+    <select id="getUser">
+        SELECT *
+        FROM t_users
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateUserProfile">
+        UPDATE t_users
+        <set>
+            profile=#{fileSeq}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     <update id="updateEmployeePassword">
         UPDATE iw_employees
@@ -133,14 +180,6 @@
           #{hidden}
         )
     </insert>
-
-    <update id="updateUserProfile">
-        UPDATE iw_employees
-        <set>
-            <if test="profile != null"> profile=#{profile},</if>
-        </set>
-        WHERE seq = #{seq}
-    </update>
 
     <insert id="insertEmployee">
     INSERT INTO iw_employees
